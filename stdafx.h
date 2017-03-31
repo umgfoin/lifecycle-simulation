@@ -1,0 +1,15 @@
+// stdafx.h : include file for standard system include files,
+// or project specific include files that are used frequently, but
+// are changed infrequently
+//
+
+#pragma once
+
+#include "targetver.h"
+#define _CRT_RAND_S 
+
+#include <stdio.h>
+#include <stdlib.h>  
+#include <stdio.h>  
+#include <limits.h> 
+#include <windows.h>
