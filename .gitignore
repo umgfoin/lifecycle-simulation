@@ -1,8 +1,4 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs/LifetimeSimulator/v15/Browse.VC.db
+Browse.VC.db
 *.tlog
 *.obj
 *.pch
