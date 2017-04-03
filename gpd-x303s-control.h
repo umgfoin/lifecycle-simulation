@@ -4,8 +4,6 @@
 class gpdx303s : public simple_comm
 {
 public:
-	 ~gpdx303s(){ close(); };
-
 	void off(bool bSoftoff = false);
 	void set_Uout(float uout);
 	bool get_Iout(float& iout);
