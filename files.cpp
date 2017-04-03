@@ -1,38 +1,73 @@
 #include "stdafx.h"
 #include "files.h"
+#include <ctime>
+#include <iomanip>
 
+LPCSTR base_file::psz_equal = " = ";
+
+bool base_file::read(void)
+{
+	ifstream file(psz_name);
+	if ( !file )
+		return false;
+
+	string line;
+	size_t hit;
+
+	while ( getline(file, line) ){
+		// remove leading blank
+		hit = line.find_first_not_of(' ');
+		if( hit && hit != string::npos )
+			line.erase(0, hit);
+		// ignore comments
+		if ( line.substr(0, 2) == "//" || line[0] == '#' )
+			continue;
+
+		// normalize assignment-syntax to "option = value"
+		hit = line.find_first_of('=');
+		if ( hit && hit != string::npos){
+			if ( line[hit + 1] != ' ' )
+				line.insert(hit + 1, 1, ' ');
+
+			if ( line[hit - 1] != ' ' )
+				line.insert(hit, 1, ' ');
+		}
+
+		parse_line(istringstream(line));
+	}
+	return true;
+}
 
 bool base_file::parse_value(istringstream& stream, unsigned& val)
 {
-	string token;
-
-	if ( stream >> token && token == "=" && stream >> token ){
-		val = stoi(token);
-		return true;
-	}
-	return false;
+	string value;
+	bool res;
+	
+	if ( res = parse_key_value_pair(stream, value) )
+		val = stoi (value);
+	
+	return res;
 }
 
 bool base_file::parse_value(istringstream& stream, string& val)
 {
-	string token;
-
-	if ( stream >> token && token == "=" && stream >> token ){
-		val = token;
-		return true;
-	}
-	return false;
+	return parse_key_value_pair(stream, val);
 }
 
 bool base_file::parse_value(istringstream& stream, float& val)
 {
-	string token;
+	string value;
+	bool res;
 
-	if ( stream >> token && token == "=" && stream >> token ){
-		val = stof(token);
-		return true;
-	}
-	return false;
+	if ( res = parse_key_value_pair(stream, value) )
+		val = stof (value);
+
+	return res;
+}
+
+bool base_file::parse_key_value_pair(istringstream& stream, string& value)
+{
+	return (stream >> value && value == "=" && stream >> value);
 }
 
 LPCSTR config_file::option_names[] = {
@@ -42,67 +77,53 @@ LPCSTR config_file::option_names[] = {
 	"t_on_min",
 	"t_on_max",
 	"t_off_min",
-	"t_off_max"
+	"t_off_max",
+	"p_min",
+	"p_max"
 };
 
-bool config_file::read()
+void config_file::parse_line(istringstream& stream)
 {
-	ifstream file(psz_name);
-	if ( !file )
-		return false;
-
-	string line;
 	string token;
+	while ( stream >> token ){
+		// make lowercase
+		for ( auto character : token ) tolower(character);
+		unsigned o = 0;
 
-	while ( getline(file, line) ){
-
-		istringstream stream(line);
-
-		while ( stream >> token ){
-			// make lowercase
-			for ( auto character : token ) tolower(character);
-
-			if ( token == option_names[0] ){
-				parse_value(stream, str_serialport);
-				// skip remainder
-				break;
-			}
-			if ( token == option_names[1] ){
-				parse_value(stream, u_range[0]);
-				// skip remainder
-				break;
-			}
-
-			if ( token == option_names[2] ){
-				parse_value(stream, u_range[1]);
-				// skip remainder
-				break;
-			}
-			if ( token == option_names[3] ){
-				parse_value(stream, t_on_range[0]);
-				// skip remainder
-				break;
-			}
-
-			if ( token == option_names[4] ){
-				parse_value(stream, t_on_range[1]);
-				// skip remainder
-				break;
-			}
-			if ( token == option_names[5] ){
-				parse_value(stream, t_off_range[0]);
-				// skip remainder
-				break;
-			}
-
-			if ( token == option_names[6] ){
-				parse_value(stream, t_off_range[1]);
-				// skip remainder
-				break;
-			}
+		if ( token == option_names[o++] ){
+			parse_value(stream, str_serialport);
+			// skip remainder
+			break;
 		}
+
+		for ( int i = 0; i < 2; i++ )
+			if ( token == option_names[o++] ){
+				parse_value(stream, u_range[i]);
+				// skip remainder
+				goto end_func;
+			}
+
+		for ( int i = 0; i < 2; i++ )
+			if ( token == option_names[o++] ){
+				parse_value(stream, t_on_range[i]);
+				// skip remainder
+				goto end_func;
+			}
+
+		for ( int i = 0; i < 2; i++ )
+			if ( token == option_names[o++] ){
+				parse_value(stream, t_off_range[i]);
+				// skip remainder
+				goto end_func;
+			}
+
+		for ( int i = 0; i < 2; i++ )
+			if ( token == option_names[o++] ){
+				parse_value(stream, p_range[i]);
+				goto end_func;
+			}
 	}
-	return true;
+	end_func:;
 }
 
 bool config_file::write(void)
@@ -111,36 +132,30 @@ bool config_file::write(void)
 	if ( !file )
 		return false;
 
-	file << option_names[0] << " = " << str_serialport	<< endl;
-	file << option_names[1] << " = " << u_range[0]		<< endl;
-	file << option_names[2] << " = " << u_range[1]		<< endl;
-	file << option_names[3] << " = " << t_on_range[0]	<< endl;
-	file << option_names[4] << " = " << t_on_range[1]	<< endl;
-	file << option_names[5] << " = " << t_off_range[0]	<< endl;
-	file << option_names[6] << " = " << t_off_range[1]	<< endl;
+	file << option_names[0] << psz_equal << str_serialport	<< endl;
+	file << option_names[1] << psz_equal << u_range[0]		<< endl;
+	file << option_names[2] << psz_equal << u_range[1]		<< endl;
+	file << option_names[3] << psz_equal << t_on_range[0]	<< endl;
+	file << option_names[4] << psz_equal << t_on_range[1]	<< endl;
+	file << option_names[5] << psz_equal << t_off_range[0]	<< endl;
+	file << option_names[6] << psz_equal << t_off_range[1]	<< endl;
+	file << option_names[7] << psz_equal << p_range[0]		<< endl;
+	file << option_names[8] << psz_equal << p_range[1]		<< endl;
 
 	return true;
 }
 
 LPCSTR state_file::option_names[] = {
 	"runtime",
-	"cycles"
+	"cycles",
+	"last_update"
 };
 
-bool state_file::read()
+void state_file::parse_line(istringstream& stream)
 {
-	ifstream file(psz_name);
-	if ( !file )
-		return false;
-
-	string line;
 	string token;
 
-	while ( getline(file, line) ){
-
-		istringstream stream(line);
-
-		while ( stream >> token ){
+	while ( stream >> token ){
 			// make lowercase
 			for ( auto character : token ) tolower(character);
 
@@ -155,9 +170,7 @@ bool state_file::read()
 				// skip remainder
 				break;
 			}
-		}
 	}
-	return true;
 }
 
 bool state_file::write(void)
@@ -166,8 +179,16 @@ bool state_file::write(void)
 	if ( !file )
 		return false;
 
-	file << option_names[0] << " = " << sigma_t << endl;
-	file << option_names[1] << " = " << cycles  << endl;
+	time_t current_t =  time(nullptr);
+	tm	tm;
+	localtime_s(&tm, &current_t);
+
+	time_t current_time;
+	time(&current_time);
+
+	file << option_names[0] << psz_equal << sigma_t << endl;
+	file << option_names[1] << psz_equal << cycles  << endl;
+	file << option_names[2] << psz_equal << std::put_time(&tm, "%F %T")  << endl;
 
 	return true;
 }
