@@ -61,7 +61,7 @@ int main()
 			//t_off = get_random(1, 5);
 
 			// count only if load measured 
-			if(P > 0)
+			if(P > config.p_range[MIN] && P < config.p_range[MAX])
 				states.cycles++;
 
 			for ( unsigned t = t_on; t--; ){
@@ -75,7 +75,7 @@ int main()
 
 					float jitter = (float) get_random(0, (unsigned) ((config.u_range[MAX] - config.u_range[MIN]) * 10.f)) / 10.f;
 
-					float U = config.u_range[0] + jitter;
+					float U = config.u_range[MIN] + jitter;
 					power.set_Uout(U);
 
 					float I = 0;
@@ -99,7 +99,7 @@ int main()
 						Sleep (period - ticks);
 				}
 				// count duty seconds
-				if(P > 0)
+				if ( P > config.p_range[MIN] && P < config.p_range[MAX] )
 					states.sigma_t++;
 			}
 
