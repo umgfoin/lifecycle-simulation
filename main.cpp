@@ -48,8 +48,11 @@ int main()
 
 		// define period[ms] of jitter frequency
 		const unsigned period = 200;
+		// init P to a value greater than 0W
+		float P = 1;
 
-		LPCWSTR		status_line = L"cyc: %d, status: %s, t[s]: %3d/%3d, sig[h]: %.1f, U[V]: %4.1f, I[mA]: %4d\r";
+		LPCWSTR	status_line = L"cycle: %d [%s] t: %3d/%3ds, sigma: %.1fh, U: %4.1fV, I: %4dmA, P: %.2fW\r";
+
 		for(;;) {
 
 			unsigned t_on = get_random(config.t_on_range[MIN], config.t_on_range[MAX]);
@@ -57,7 +60,9 @@ int main()
 			//t_on = get_random(3, 5);
 			//t_off = get_random(1, 5);
 
-			states.cycles++;
+			// count only if load measured 
+			if(P > 0)
+				states.cycles++;
 
 			for ( unsigned t = t_on; t--; ){
 				// duty cycle
@@ -70,11 +75,13 @@ int main()
 
 					float jitter = (float) get_random(0, (unsigned) ((config.u_range[MAX] - config.u_range[MIN]) * 10.f)) / 10.f;
 
-					float vadj = config.u_range[0] + jitter;
-					power.set_Uout(vadj);
+					float U = config.u_range[0] + jitter;
+					power.set_Uout(U);
 
-					float ICur = 0;
-					power.get_Iout(ICur);
+					float I = 0;
+					power.get_Iout(I);
+
+					P = I * U;
 
 					wprintf(status_line,
 							states.cycles,
@@ -82,23 +89,25 @@ int main()
 							t,
 							t_on,
 							(float) states.sigma_t / 3600.f,
-							vadj, (unsigned) (ICur * 1000.f)
+							U, (unsigned) (I * 1000.f),
+							P
 					);
 
-					// delay for reminder of period
+					// delay for remainder of period
 					DWORD ticks = GetTickCount() - t1;
 					if ( ticks < period )
 						Sleep (period - ticks);
 				}
 				// count duty seconds
-				states.sigma_t++;
+				if(P > 0)
+					states.sigma_t++;
 			}
 
 			// dark cycle
-			printf("%79s\r", "");
-
 			bool softoff;
 			power.off(softoff = (get_random(0, 1) == 1));
+
+			std::printf("%79s\r", "");
 
 			for ( unsigned t = t_off; t--; ){
 				if ( stop_flag )
@@ -110,6 +119,7 @@ int main()
 						t,
 						t_off,
 						(float) states.sigma_t / 3600.f,
+						0.f,
 						0.f,
 						0.f
 				);
