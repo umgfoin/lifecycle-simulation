@@ -13,6 +13,6 @@ public:
 	void send_sync(LPCSTR psz_cmd);
 	size_t rcv_sync(unsigned char* buf, size_t size);
 
-public:
+protected:
 	HANDLE hFile = INVALID_HANDLE_VALUE;
 };
