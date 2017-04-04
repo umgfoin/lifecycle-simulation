@@ -1,7 +1,8 @@
 #pragma once
-#include "comm.h"
+//#include "win_serial_comm.h"
+#include "asio_serial_comm.h"
 
-class gpdx303s : public simple_comm
+class gpdx303s : public asio_serial_comm /*win_serial_comm*/
 {
 public:
 	void off(bool bSoftoff = false);

@@ -64,7 +64,7 @@ bool gpdx303s::get_Iout(float& iout)
 
 void gpdx303s::close(void)
 {
-	if ( hFile != INVALID_HANDLE_VALUE ){
+	if ( is_open() ){
 		off();
 		enable_output(false);
 		set_online(false);
