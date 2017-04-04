@@ -3,7 +3,7 @@
 #include <ctime>
 #include <iomanip>
 
-LPCSTR base_file::psz_equal = " = ";
+const char* base_file::psz_equal = " = ";
 
 bool base_file::read(void)
 {
@@ -15,7 +15,7 @@ bool base_file::read(void)
 	size_t hit;
 
 	while ( getline(file, line) ){
-		// remove leading blank
+		// remove leading blanks
 		hit = line.find_first_not_of(' ');
 		if( hit && hit != string::npos )
 			line.erase(0, hit);
@@ -70,7 +70,20 @@ bool base_file::parse_key_value_pair(istringstream& stream, string& value)
 	return (stream >> value && value == "=" && stream >> value);
 }
 
-LPCSTR config_file::option_names[] = {
+string base_file::get_timestamp(time_t* timedata)
+{
+	time_t current_t = time(nullptr);
+	tm	tm;
+
+	localtime_s(&tm, timedata ? timedata : &current_t);
+	
+	stringstream stream;
+	stream << std::put_time(&tm, "%F-%T");
+
+	return move(stream.str());
+}
+
+const char* config_file::option_names[] = {
 	"device",
 	"u_min",
 	"u_max",
@@ -145,9 +158,10 @@ bool config_file::write(void)
 	return true;
 }
 
-LPCSTR state_file::option_names[] = {
+const char* state_file::option_names[] = {
 	"runtime",
 	"cycles",
+	"last_power_violation",
 	"last_update"
 };
 
@@ -179,16 +193,38 @@ bool state_file::write(void)
 	if ( !file )
 		return false;
 
-	time_t current_t =  time(nullptr);
+	file << option_names[0] << psz_equal << sigma_t << endl;
+	file << option_names[1] << psz_equal << cycles  << endl;
+	file << option_names[2] << psz_equal << get_timestamp()  << endl;
+
+	return true;
+}
+
+void log_file::parse_line(istringstream& stream)
+{
+	// this is not an input-file
+}
+
+bool log_file::write(string& event)
+{
+	ofstream file(psz_name, ios_base::out | ios_base::app);
+	if ( !file )
+		return false;
+
+	time_t current_t = time(nullptr);
 	tm	tm;
 	localtime_s(&tm, &current_t);
 
-	time_t current_time;
-	time(&current_time);
-
-	file << option_names[0] << psz_equal << sigma_t << endl;
-	file << option_names[1] << psz_equal << cycles  << endl;
-	file << option_names[2] << psz_equal << std::put_time(&tm, "%F %T")  << endl;
-
+	file << std::put_time(&tm, "%F-%T ") << event << endl;
+	
 	return true;
+}
+
+void log_file::operator << (stringstream& stream)
+{
+	ofstream file(psz_name, ios_base::out | ios_base::app);
+	if ( file )
+		file << get_timestamp() << " " << stream.str() << endl;
+
+	stream.str("");
 }

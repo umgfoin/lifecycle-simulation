@@ -4,8 +4,9 @@
 
 #include "stdafx.h"
 #include <stdlib.h>  
-#include <stdio.h>  
 #include <limits.h> 
+#include <iostream>
+#include <iomanip>
 
 #include "gpd-x303s-control.h"
 #include "files.h"
@@ -17,7 +18,8 @@ bool		stop_flag = false;
 
 state_file	states(L"state.cfg");
 config_file config(L"config.cfg");
-gpdx303s	power;
+log_file	logger(L"events.log");
+gpdx303s	vsource;
 
 
 int main()
@@ -33,7 +35,7 @@ int main()
 		return 0;
 	}
 
-	if ( !power.open_comm(config.str_serialport.c_str(), 115200 )){
+	if ( !vsource.open_comm(config.str_serialport.c_str(), 115200 )){
 		wcout << "Failed to open serial-port (" << config.str_serialport.c_str() << ")." << endl;
 		return 0;
 	}
@@ -42,14 +44,23 @@ int main()
 	
 	try{
 
-		power.set_online();
-		power.set_Uout(config.u_range[MIN]);
-		power.enable_output();
+		vsource.set_online();
+		vsource.set_Uout(config.u_range[MIN]);
+		vsource.enable_output();
+
+		stringstream log_event;
+		log_event.setf(ios::left | ios::fixed);
+		log_event.precision(1);
+		
+		log_event << "Simulation started.";
+		logger << log_event;
 
 		// define period[ms] of jitter frequency
 		const unsigned period = 200;
-		// init P to a value greater than 0W
-		float P = 1;
+		
+		// init P to a value meeting p_range-constraints
+		float P = config.p_range[MAX] - config.p_range[MIN] / 2;
+		bool power_good = true;
 
 		LPCWSTR	status_line = L"cycle: %d [%s] t: %3d/%3ds, sigma: %.1fh, U: %4.1fV, I: %4dmA, P: %.2fW\r";
 
@@ -60,12 +71,13 @@ int main()
 			//t_on = get_random(3, 5);
 			//t_off = get_random(1, 5);
 
-			// count only if load measured 
-			if(P > config.p_range[MIN] && P < config.p_range[MAX])
+			// only count duty-cycles if within power-constraints
+			if (power_good)
 				states.cycles++;
 
 			for ( unsigned t = t_on; t--; ){
 				// duty cycle
+				float U, I;
 				for ( int i = 1000 / period; i--; ){
 					if ( stop_flag )
 						throw 0;
@@ -75,11 +87,11 @@ int main()
 
 					float jitter = (float) get_random(0, (unsigned) ((config.u_range[MAX] - config.u_range[MIN]) * 10.f)) / 10.f;
 
-					float U = config.u_range[MIN] + jitter;
-					power.set_Uout(U);
+					U = config.u_range[MIN] + jitter;
+					vsource.set_Uout(U);
 
-					float I = 0;
-					power.get_Iout(I);
+					I = 0;
+					vsource.get_Iout(I);
 
 					P = I * U;
 
@@ -98,14 +110,26 @@ int main()
 					if ( ticks < period )
 						Sleep (period - ticks);
 				}
-				// count duty seconds
-				if ( P > config.p_range[MIN] && P < config.p_range[MAX] )
+				// update power_good-state
+				bool last_power_good = power_good;
+				power_good = (P > config.p_range[MIN] && P < config.p_range[MAX]);
+				
+				// only count duty-time if within power-constraints
+				if (power_good)
 					states.sigma_t++;
+
+				else if(last_power_good){
+					log_event << "Power violation: " << U << "V, " << setprecision(3) << I << "A, " << P << "W [U,I,P]" << setprecision(1);
+					logger << log_event;
+				}
+
 			}
+			log_event << "Duty cycle finished: T=" << t_on << "s, SigmaT=" << (float) states.sigma_t / 3600.f << "h";
+			logger << log_event;
 
 			// dark cycle
 			bool softoff;
-			power.off(softoff = (get_random(0, 1) == 1));
+			vsource.off(softoff = (get_random(0, 1) == 1));
 
 			std::printf("%79s\r", "");
 
@@ -125,7 +149,8 @@ int main()
 				);
 				Sleep (1000);
 			}
-
+			log_event << "Dark cycle finished: T=" << t_off << "s";
+			logger << log_event;
 		}
 	}
 
@@ -134,16 +159,19 @@ int main()
 	}
 
 	tidy_up();
-  
+
+ 	logger << stringstream("Simulation stopped");
+ 
 	return 0;
 }
 
 void tidy_up(void)
 {
+
 	if ( !states.write() )
 		wcout << "Failed writing statefile (" << states.psz_name << ")." << endl;
 	
-	power.close();
+	vsource.close();
 }
 
 unsigned get_random(unsigned low, unsigned high)
