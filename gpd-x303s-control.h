@@ -5,6 +5,8 @@
 class gpdx303s : public asio_serial_comm /*win_serial_comm*/
 {
 public:
+	~gpdx303s(){ close(); };
+
 	void off(bool bSoftoff = false);
 	void set_Uout(float uout);
 	bool get_Iout(float& iout);

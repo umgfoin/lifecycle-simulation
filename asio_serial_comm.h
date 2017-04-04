@@ -29,6 +29,6 @@ public:
 
 protected:
 	asio::io_service					io_service;
-	std::shared_ptr<asio::serial_port>  sp_serial;
+	std::unique_ptr<asio::serial_port>  p_serial;
 };
 
