@@ -25,8 +25,9 @@ bool asio_serial_comm::open_comm(const char* port, unsigned linespeed)
 void asio_serial_comm::close_comm(void)
 {
 	if ( p_serial ){
-		p_serial->cancel();
-		p_serial->close();
+		system::error_code error;
+		p_serial->cancel(error);
+		p_serial->close(error);
 		p_serial.reset();
 	}
 	io_service.stop();
