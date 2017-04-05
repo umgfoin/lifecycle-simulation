@@ -7,14 +7,19 @@
 #include <limits.h> 
 #include <iostream>
 #include <iomanip>
-
+#include <chrono>
+#include <thread>
+#include <future>
+#include <signal.h>
 #include "gpd-x303s-control.h"
 #include "files.h"
 #include "main.h"
 
 using namespace std;
+using namespace std::chrono;
+using namespace std::this_thread;
 
-bool		stop_flag = false;
+atomic<bool> stop_flag = false;
 
 state_file	states(L"state.cfg");
 config_file config(L"config.cfg");
@@ -40,7 +45,10 @@ int main()
 		return 0;
 	}
 
-	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
+	signal(SIGINT, sig_handler);
+	signal(SIGBREAK, sig_handler);
+	signal(SIGTERM, sig_handler);
+	signal(SIGABRT, sig_handler);
 	
 	try{
 
@@ -56,13 +64,13 @@ int main()
 		logger << log_event;
 
 		// define period[ms] of jitter frequency
-		const unsigned period = 200;
+		const milliseconds period(200);
 		
 		// init P to a value meeting p_range-constraints
 		float P = config.p_range[MAX] - config.p_range[MIN] / 2;
 		bool power_good = true;
 
-		LPCWSTR	status_line = L"cycle: %d [%s] t: %3d/%3ds, sigma: %.1fh, U: %4.1fV, I: %4dmA, P: %.2fW\r";
+		const wchar_t*	status_line = L"cycle: %d [%s] t: %3d/%3ds, sigma: %.1fh, U: %4.1fV, I: %4dmA, P: %.2fW\r";
 
 		for(;;) {
 
@@ -78,12 +86,12 @@ int main()
 			for ( unsigned t = t_on; t--; ){
 				// duty cycle
 				float U, I;
-				for ( int i = 1000 / period; i--; ){
+				for ( int i = 1000 / (int) period.count(); i--; ){
 					if ( stop_flag )
 						throw 0;
 
 					// update jitter every 200ms
-					DWORD t1 = GetTickCount();
+					auto t1 = steady_clock::now();
 
 					float jitter = (float) get_random(0, (unsigned) ((config.u_range[MAX] - config.u_range[MIN]) * 10.f)) / 10.f;
 
@@ -106,9 +114,10 @@ int main()
 					);
 
 					// delay for remainder of period
-					DWORD ticks = GetTickCount() - t1;
-					if ( ticks < period )
-						Sleep (period - ticks);
+					milliseconds ms_gone = duration_cast<milliseconds>(steady_clock::now() - t1);
+
+					if ( ms_gone < period )
+						sleep_for(period - ms_gone);
 				}
 				// update power_good-state
 				bool last_power_good = power_good;
@@ -147,7 +156,7 @@ int main()
 						0.f,
 						0.f
 				);
-				Sleep (1000);
+				sleep_for(seconds(1));
 			}
 			log_event << "Dark cycle finished: T=" << t_off << "s";
 			logger << log_event;
@@ -184,20 +193,26 @@ unsigned get_random(unsigned low, unsigned high)
 	return urandom;
 }
 
-BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
+void sig_handler(int sig)
 {
-	switch ( dwCtrlType ){
-	case CTRL_C_EVENT:
-	case CTRL_BREAK_EVENT:
-	case CTRL_SHUTDOWN_EVENT:
-		stop_flag = true;
+	switch ( sig ){
+	// CTRL-C
+	case SIGINT:
+	case SIGABRT:
+	case SIGABRT_COMPAT:
+	stop_flag = true;
 		break;
-	case CTRL_CLOSE_EVENT:
+	case SIGTERM:
+	// console-close
+	case SIGBREAK:
+		// wait forever (needs testing for POSIX)
+		// on windows, SIGBREAK runs in seperate thread
+		// leaving this function will remove the main-thread
+		// thus waiting here, let the main thread exit safely
 		stop_flag = true;
-		tidy_up();
+		promise<void>().get_future().wait();
 		break;
 	default:
 		break;
 	}
-	return TRUE;
 }

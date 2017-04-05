@@ -1,11 +1,18 @@
 #include "stdafx.h"
+#include <chrono>
+#include <thread>
 #include "gpd-x303s-control.h"
+
+using namespace std::chrono;
+using namespace std::this_thread;
 
 void gpdx303s::set_online(bool enable)
 {
 	send_sync(enable ? "REMOTE\n" : "LOCAL\n");
-	Sleep(500);
-	clear_rcv_buffer();
+	if ( enable ){
+		sleep_for(milliseconds(500));
+		clear_rcv_buffer();
+	}
 }
 
 void gpdx303s::enable_output(bool enable)
@@ -25,7 +32,7 @@ void gpdx303s::set_Uout(float u_new)
 	sprintf_s(psz_cmd, "VSET1:%.1f\n", __min(u_out, 14.));
 
 	send_sync(psz_cmd);
-	Sleep(10);
+	sleep_for(milliseconds(10));
 }
 
 void gpdx303s::off(bool bSoftoff)
@@ -35,7 +42,7 @@ void gpdx303s::off(bool bSoftoff)
 
 		for ( float u = u_out; u > 0.; u -= step ){
 			set_Uout(u);
-			Sleep(50);
+			sleep_for(milliseconds(50));
 		}
 	}
 	set_Uout(0.);
@@ -49,7 +56,7 @@ bool gpdx303s::get_Iout(float& iout)
 	send_sync(psz_cmd);
 
 	for ( int retry = 10; retry--; ){
-		Sleep(10);
+		sleep_for(milliseconds(10));
 		size_t inbytes = rcv_sync(buf, sizeof(buf) - 1);
 		if ( inbytes ){
 			buf[inbytes] = 0;

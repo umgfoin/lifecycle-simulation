@@ -6,4 +6,4 @@
 
 void		tidy_up(void);
 unsigned	get_random(unsigned low, unsigned high);
-BOOL		WINAPI HandlerRoutine(DWORD dwCtrlType);
+void		sig_handler(int sig);
