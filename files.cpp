@@ -1,13 +1,15 @@
 #include "stdafx.h"
 #include "files.h"
-#include <ctime>
 #include <iomanip>
+
+using namespace boost::filesystem;
+using namespace std;
 
 const char* base_file::psz_equal = " = ";
 
 bool base_file::read(void)
 {
-	ifstream file(psz_name);
+	boost::filesystem::ifstream file(file_path);
 	if ( !file )
 		return false;
 
@@ -32,7 +34,6 @@ bool base_file::read(void)
 			if ( line[hit - 1] != ' ' )
 				line.insert(hit, 1, ' ');
 		}
-
 		parse_line(istringstream(line));
 	}
 	return true;
@@ -43,7 +44,7 @@ bool base_file::parse_value(istringstream& stream, unsigned& val)
 	string value;
 	bool res;
 	
-	if ( res = parse_key_value_pair(stream, value) )
+	if ( (res = parse_key_value_pair(stream, value)) )
 		val = stoi (value);
 	
 	return res;
@@ -72,13 +73,18 @@ bool base_file::parse_key_value_pair(istringstream& stream, string& value)
 
 string base_file::get_timestamp(time_t* timedata)
 {
-	time_t current_t = time(nullptr);
-	tm	tm;
 
-	localtime_s(&tm, timedata ? timedata : &current_t);
-	
+	std::time_t time_t, *t;
+
+	if ( timedata )
+		t = timedata;
+	else{
+		t = &time_t;
+		time_t = std::time(nullptr);
+	}
+
 	stringstream stream;
-	stream << std::put_time(&tm, "%F-%T");
+	stream << std::put_time(std::localtime(t), "%F-%T %Z");
 
 	return move(stream.str());
 }
@@ -95,7 +101,7 @@ const char* config_file::option_names[] = {
 	"p_max"
 };
 
-void config_file::parse_line(istringstream& stream)
+void config_file::parse_line(istringstream&& stream)
 {
 	string token;
 	while ( stream >> token ){
@@ -141,7 +147,7 @@ void config_file::parse_line(istringstream& stream)
 
 bool config_file::write(void)
 {
-	ofstream file(psz_name, ios_base::out | ios_base::trunc);
+	boost::filesystem::ofstream file(file_path, ios_base::out | ios_base::trunc);
 	if ( !file )
 		return false;
 
@@ -165,7 +171,7 @@ const char* state_file::option_names[] = {
 	"last_update"
 };
 
-void state_file::parse_line(istringstream& stream)
+void state_file::parse_line(istringstream&& stream)
 {
 	string token;
 
@@ -189,7 +195,7 @@ void state_file::parse_line(istringstream& stream)
 
 bool state_file::write(void)
 {
-	ofstream file(psz_name, ios_base::out | ios_base::trunc);
+	boost::filesystem::ofstream file(file_path, ios_base::out | ios_base::trunc);
 	if ( !file )
 		return false;
 
@@ -200,31 +206,39 @@ bool state_file::write(void)
 	return true;
 }
 
-void log_file::parse_line(istringstream& stream)
+void log_file::parse_line(istringstream&& stream)
 {
 	// this is not an input-file
 }
 
 bool log_file::write(string& event)
 {
-	ofstream file(psz_name, ios_base::out | ios_base::app);
+	boost::filesystem::ofstream file(file_path, ios_base::out | ios_base::app);
+
 	if ( !file )
 		return false;
 
-	time_t current_t = time(nullptr);
-	tm	tm;
-	localtime_s(&tm, &current_t);
 
-	file << std::put_time(&tm, "%F-%T ") << event << endl;
+	file << get_timestamp() << " " << event << endl;
 	
 	return true;
 }
 
-void log_file::operator << (stringstream& stream)
+void log_file::operator << (const stringstream& stream)
 {
-	ofstream file(psz_name, ios_base::out | ios_base::app);
+	boost::filesystem::ofstream file(file_path, ios_base::out | ios_base::app);
+
 	if ( file )
 		file << get_timestamp() << " " << stream.str() << endl;
 
-	stream.str("");
+	const_cast<stringstream&>(stream).str("");
+	//return *this;
+	// returning void prevents *this << obj << obj
+}
+
+void log_file::operator << (const string& event)
+{
+	*this << stringstream(event);
+	//return *this;
+	// returning void prevents *this << obj << obj
 }

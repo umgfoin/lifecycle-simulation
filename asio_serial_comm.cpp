@@ -58,9 +58,11 @@ size_t asio_serial_comm::rcv_sync(unsigned char* buf, size_t size)
 	system::error_code error;
 	size_t read;
 
-	if ( p_serial ){
+	if ( p_serial )
 		read = p_serial->read_some(asio::buffer (buf, size), error);
-	}
+	else
+		read = 0;
+
 	return read;
 }
 
@@ -83,7 +85,7 @@ void asio_serial_comm::clear_io_buffers(unsigned method)
 {
 	// asio provides no implementation to clear io-buffers
 
-#ifdef BOOST_WINDOWS
+#ifdef _WIN32
 	// WIN32
 	#include <windows.h>
 	int purge_flags[] = {PURGE_RXCLEAR | PURGE_RXABORT,
@@ -95,6 +97,6 @@ void asio_serial_comm::clear_io_buffers(unsigned method)
 	// POSIX
 	#include <termios.h>
 	int purge_flags[] = { TCIFLUSH, TCOFLUSH, TCIOFLUSH };
-	::tcflush(sp_serial->native(), purge_flags[method]);
+	::tcflush(p_serial->native(), purge_flags[method]);
 #endif
 }

@@ -10,7 +10,6 @@
 //#include <boost/thread.hpp>
 
 using namespace boost;
-using namespace std;
 
 class asio_serial_comm
 {

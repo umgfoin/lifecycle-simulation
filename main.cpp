@@ -3,40 +3,46 @@
 
 
 #include "stdafx.h"
-#include <stdlib.h>  
-#include <limits.h> 
+#include <cstdlib>  
+#include <limits> 
 #include <iostream>
 #include <iomanip>
 #include <chrono>
 #include <thread>
 #include <future>
-#include <signal.h>
+#include <csignal>
 #include "gpd-x303s-control.h"
 #include "files.h"
+#include <boost/random/discrete_distribution.hpp>
+#include <boost/random/random_device.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include "main.h"
 
 using namespace std;
 using namespace std::chrono;
 using namespace std::this_thread;
+using namespace boost;
 
-atomic<bool> stop_flag = false;
+atomic<bool> stop_flag(false);
 
-state_file	states(L"state.cfg");
-config_file config(L"config.cfg");
-log_file	logger(L"events.log");
-gpdx303s	vsource;
+state_file	          states(L"state.cfg");
+config_file           config(L"config.cfg");
+log_file	          logger(L"events.log");
+gpdx303s	          vsource;
+random::random_device dev_random;
+
 
 
 int main()
 {
 	// get persistant states and settings
 	if ( !states.read() ){
-		wcout << "Failed reading statefile (" << states.psz_name << ")." << endl;
+		wcout << "Failed reading statefile (" << states.file_path << ")." << endl;
 		return 0;
 	}
 
 	if ( !config.read() ){
-		wcout << "Failed reading config-file (" << config.psz_name << ")." << endl;
+		wcout << "Failed reading config-file (" << config.file_path << ")." << endl;
 		return 0;
 	}
 
@@ -45,10 +51,10 @@ int main()
 		return 0;
 	}
 
-	signal(SIGINT, sig_handler);
+	signal(SIGINT,   sig_handler);
 	signal(SIGBREAK, sig_handler);
-	signal(SIGTERM, sig_handler);
-	signal(SIGABRT, sig_handler);
+	signal(SIGTERM,  sig_handler);
+	signal(SIGABRT,  sig_handler);
 	
 	try{
 
@@ -56,12 +62,11 @@ int main()
 		vsource.set_Uout(config.u_range[MIN]);
 		vsource.enable_output();
 
-		stringstream log_event;
+		std::stringstream log_event;
 		log_event.setf(ios::left | ios::fixed);
 		log_event.precision(1);
 		
-		log_event << "Simulation started.";
-		logger << log_event;
+		logger << "Simulation started.";
 
 		// define period[ms] of jitter frequency
 		const milliseconds period(200);
@@ -74,7 +79,7 @@ int main()
 
 		for(;;) {
 
-			unsigned t_on = get_random(config.t_on_range[MIN], config.t_on_range[MAX]);
+			unsigned t_on  = get_random(config.t_on_range[MIN], config.t_on_range[MAX]);
 			unsigned t_off = get_random(config.t_off_range[MIN], config.t_off_range[MAX]);
 			//t_on = get_random(3, 5);
 			//t_off = get_random(1, 5);
@@ -178,19 +183,16 @@ void tidy_up(void)
 {
 
 	if ( !states.write() )
-		wcout << "Failed writing statefile (" << states.psz_name << ")." << endl;
+		wcout << "Failed writing statefile (" << states.file_path << ")." << endl;
 	
 	vsource.close();
 }
 
 unsigned get_random(unsigned low, unsigned high)
 {
-	unsigned urandom;
-
-	rand_s(&urandom);
-	urandom = (unsigned)( ((double) urandom / (double) UINT_MAX) * (double) (high - low + 1) + low);
-
-	return urandom;
+	//boost::random::mt19937 generator;
+	random::uniform_int_distribution<> distribution(low, high);
+	return distribution(dev_random);
 }
 
 void sig_handler(int sig)
@@ -199,18 +201,18 @@ void sig_handler(int sig)
 	// CTRL-C
 	case SIGINT:
 	case SIGABRT:
-	case SIGABRT_COMPAT:
-	stop_flag = true;
-		break;
+		stop_flag = true;
+			break;
+
 	case SIGTERM:
 	// console-close
 	case SIGBREAK:
-		// wait forever (needs testing for POSIX)
-		// on windows, SIGBREAK runs in seperate thread
+		// on windows, signal-handlers run in seperate thread
 		// leaving this function will remove the main-thread
 		// thus waiting here, let the main thread exit safely
 		stop_flag = true;
-		promise<void>().get_future().wait();
+		sleep_for(seconds(2));
+//		promise<void>().get_future().wait();
 		break;
 	default:
 		break;

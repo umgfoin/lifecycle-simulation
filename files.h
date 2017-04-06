@@ -1,19 +1,21 @@
 #pragma once
 #include <iostream> 
-#include <fstream> 
 #include <sstream> 
 #include <string>
+#include <ctime>
+#include <boost/filesystem/fstream.hpp>
 
+using namespace boost::filesystem;
 using namespace std;
 
 class base_file
 {
 public:
-	base_file(const wchar_t* psz_filename) : psz_name(psz_filename){};
+	base_file(const path file_path) : file_path (file_path){};
 	base_file(void) = delete;
 
 	virtual bool read(void);
-	virtual void parse_line(istringstream& stream) abstract;
+	virtual void parse_line(istringstream&& stream) = 0;
 
 protected:
 	bool	parse_key_value_pair(istringstream& stream, string& value);
@@ -23,17 +25,17 @@ protected:
 	string	get_timestamp(time_t* = nullptr);
 
 public:
-	const wchar_t*		 psz_name;
+	path file_path;
 	static 	const char*  psz_equal;
 };
 
 class state_file : public base_file
 {
 public:
-	state_file(const wchar_t* psz_filename) : base_file(psz_filename) {};
+	state_file(const path& file_path) : base_file(file_path) {};
 
 	virtual bool write(void);
-	virtual void parse_line(istringstream& stream);
+	virtual void parse_line(istringstream&& stream);
 
 	unsigned cycles  = 0;		// total number of on/off cycles
 	unsigned sigma_t = 0;		// accumulated duty-cycle-time [s]
@@ -45,10 +47,10 @@ private:
 class config_file : public base_file
 {
 public:
-	config_file(const wchar_t* psz_filename) : base_file(psz_filename) {};
+	config_file(const path& file_path) : base_file(file_path) {};
 
 	virtual bool write(void);
-	virtual void parse_line(istringstream& stream);
+	virtual void parse_line(istringstream&& stream);
 
 	string		str_serialport;						// serial-port power-supply data-connection
 	float		u_range[2]		= { 09.0f, 13.f };	// U-range for jitter simulation [V]
@@ -63,10 +65,11 @@ private:
 class log_file : public base_file
 {
 public:
-	log_file(const wchar_t* psz_filename) : base_file(psz_filename) {};
+	log_file(const path& file_path) : base_file(file_path) {};
 
 	virtual bool write(string& event);
-	virtual void parse_line(istringstream& stream);
+	virtual void parse_line(istringstream&& stream);
 
-	void operator << (stringstream& str);
+	void operator << (const stringstream& str);
+	void operator << (const string& str);
 };
