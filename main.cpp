@@ -75,7 +75,7 @@ int main()
 		float P = config.p_range[MAX] - config.p_range[MIN] / 2;
 		bool power_good = true;
 
-		const wchar_t*	status_line = L"cycle: %d [%s] t: %3d/%3ds, sigma: %.1fh, U: %4.1fV, I: %4dmA, P: %.2fW\r";
+		const wchar_t*	status_line = L"cycle: %d [%ls] t: %3d/%3ds, sigma: %.1fh, U: %4.1fV, I: %4dmA, P: %.2fW\r";
 
 		for(;;) {
 
