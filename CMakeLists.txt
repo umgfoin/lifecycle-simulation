@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.7)
 
 set (CMAKE_INSTALL_PREFIX "/" CACHE PATH "Global installation prefix. Works for relocating the complete installation. Normally / ")
 
@@ -7,22 +7,29 @@ include(FindPkgConfig)
 
 # Cmake module directory
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
-
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/build)
+# set (BOOST_ROOT "/usr/include/boost")
 #---------------------------------
 #--------------------------------
-# needed for Boost 2.8
-set (Boost_NO_BOOST_CMAKE ON)
+# needed for Boost 2.8BOOST_ROOT
+# set (Boost_NO_BOOST_CMAKE ON)
+
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 #---------------------------------
-# ---------------- Find Boost 1.58
-set (BOOST_INCLUDEDIR "/usr/include/boost148") # EPEL5
-set (BOOST_LIBRARYDIR "/usr/lib${LIB_SUFFIX}/boost148/") # EPEL5
-set (Boost_ADDITIONAL_VERSIONS "1.59" "1.59.0")
+# ---------------- Find Boost - start search here
+set (BOOST_INCLUDEDIR "/usr/include/boost")
+set (BOOST_LIBRARYDIR "/usr/lib${LIB_SUFFIX}/boost/")
+set (Boost_ADDITIONAL_VERSIONS "1.48" "1.48.0")
 
-#needed for GCC6
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+find_package (Boost 1.4 COMPONENTS filesystem random date_time system thread regex REQUIRED)
 
-find_package (Boost 1.59 COMPONENTS random date_time system thread regex REQUIRED)
-
+# switch to additional alt. boot-lib, if desired
 if (Boost_FOUND)
   # Hack for CentOS6 with EPEL enabled
   if (Boost_INCLUDE_DIR STREQUAL "/usr/include/boost148")
@@ -34,8 +41,22 @@ if (Boost_FOUND)
   message ("Boost libraries: ${Boost_LIBRARY_DIRS}")
 endif (Boost_FOUND)
 
+
+
 set(simulatorSrcs stdafx.cpp main.cpp gpd-x303s-control.cpp asio_serial_comm.cpp files.cpp)
 
-add_executable(simulator ${simulatorSrcs})
+set(TARGET_NAME "simulator")
 
-target_link_libraries(simulator libboost_system-mt.so libboost_random-mt.so libboost_filesystem-mt.so pthread)
+add_executable(${TARGET_NAME} ${simulatorSrcs})
+
+# append additional compiler-flags
+# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
+# compile as C++14 (current CMake-style)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 14)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# compile as C++14 (newest CMake only)
+# target_compile_features(${TARGET_NAME} PUBLIC cxx_std_14)
+
+target_link_libraries(${TARGET_NAME} ${Boost_LIBRARIES} Threads::Threads)
