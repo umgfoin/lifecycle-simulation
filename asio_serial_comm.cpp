@@ -1,6 +1,14 @@
 #include "stdafx.h"
 #include "asio_serial_comm.h"
 
+#ifdef _WIN32
+	// WIN32
+	#include <windows.h>
+#else
+	// POSIX
+	#include <termios.h>
+#endif
+
 asio_serial_comm::~asio_serial_comm()
 {
 	close_comm();
@@ -41,6 +49,28 @@ void asio_serial_comm::setup_comm(unsigned linespeed)
 	p_serial->set_option(asio::serial_port_base::stop_bits(asio::serial_port_base::stop_bits::one));
 	p_serial->set_option(asio::serial_port_base::parity(asio::serial_port_base::parity::none));
 	p_serial->set_option(asio::serial_port_base::flow_control(asio::serial_port_base::flow_control::none));
+	set_comm_timeouts();
+}
+
+void asio_serial_comm::set_comm_timeouts(void)
+{
+#ifdef _WIN32
+	COMMTIMEOUTS to;
+	HANDLE h = p_serial->native();
+	::GetCommTimeouts(h, &to);
+	to.ReadIntervalTimeout = MAXDWORD;
+	to.ReadTotalTimeoutMultiplier = 0;
+	to.ReadTotalTimeoutConstant = 0;
+	::SetCommTimeouts(h, &to);
+#else
+	termios tio;
+	int fd = p_serial->native();
+	::tcgetattr(fd, &tio); /* get current port settings */
+	tio.c_cc[VTIME] = 0;   /* inter-character timer unused */
+	tio.c_cc[VMIN] = 0;    /* blocking read until 5 chars received */
+	::tcflush(fd, TCIFLUSH);
+	::tcsetattr(fd, TCSANOW, &tio);
+#endif
 }
 
 void asio_serial_comm::send_sync(const char* buf)
@@ -87,7 +117,6 @@ void asio_serial_comm::clear_io_buffers(unsigned method)
 
 #ifdef _WIN32
 	// WIN32
-	#include <windows.h>
 	int purge_flags[] = {PURGE_RXCLEAR | PURGE_RXABORT,
 						 PURGE_TXCLEAR | PURGE_TXABORT, 
 						 PURGE_RXCLEAR | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_TXABORT };
@@ -95,7 +124,6 @@ void asio_serial_comm::clear_io_buffers(unsigned method)
 
 #else
 	// POSIX
-	#include <termios.h>
 	int purge_flags[] = { TCIFLUSH, TCOFLUSH, TCIOFLUSH };
 	::tcflush(p_serial->native(), purge_flags[method]);
 #endif
