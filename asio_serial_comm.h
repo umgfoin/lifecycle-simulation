@@ -18,6 +18,7 @@ public:
 
 	bool open_comm(const char* port, unsigned linespeed = 0);
 	void setup_comm(unsigned linespeed);
+	void set_comm_timeouts(void);
 	void close_comm(void);
 	bool is_open(void);
 	void send_sync(const char* psz_cmd);
