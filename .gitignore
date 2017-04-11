@@ -1,4 +1,6 @@
-Browse.VC.db
+/.vs
+/build
+/intermediate
 *.tlog
 *.obj
 *.pch
