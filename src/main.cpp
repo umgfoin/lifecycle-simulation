@@ -118,6 +118,7 @@ int main()
 							P
 					);
 
+					wcout.flush();
 					// delay for remainder of period
 					milliseconds ms_gone = duration_cast<milliseconds>(steady_clock::now() - t1);
 
@@ -161,6 +162,7 @@ int main()
 						0.f,
 						0.f
 				);
+				wcout.flush();
 				sleep_for(seconds(1));
 			}
 			log_event << "Dark cycle finished: T=" << t_off << "s";
