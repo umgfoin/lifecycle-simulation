@@ -96,7 +96,7 @@ size_t asio_serial_comm::rcv_sync(unsigned char* buf, size_t size)
 	return read;
 }
 
-bool asio_serial_comm::is_open(void)
+bool asio_serial_comm::is_open(void) const
 {
 	return (bool) p_serial;
 }

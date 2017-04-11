@@ -60,7 +60,7 @@ bool base_file::parse_value(istringstream& stream, float& val)
 	string value;
 	bool res;
 
-	if ( res = parse_key_value_pair(stream, value) )
+	if ( (res = parse_key_value_pair(stream, value)) )
 		val = stof (value);
 
 	return res;

@@ -20,7 +20,7 @@ public:
 	void setup_comm(unsigned linespeed);
 	void set_comm_timeouts(void);
 	void close_comm(void);
-	bool is_open(void);
+	bool is_open(void) const;
 	void send_sync(const char* psz_cmd);
 	size_t rcv_sync(unsigned char* buf, size_t size);
 	void clear_rcv_buffer(void);
