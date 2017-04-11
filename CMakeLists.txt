@@ -39,8 +39,9 @@ if (Boost_FOUND)
 
   message ("Boost headers under: ${Boost_INCLUDE_DIR}")
   message ("Boost libraries: ${Boost_LIBRARY_DIRS}")
-endif (Boost_FOUND)
 
+  include_directories(${Boost_INCLUDE_DIRS})
+endif (Boost_FOUND)
 
 
 #set(simulatorSrcs stdafx.cpp main.cpp gpd-x303s-control.cpp asio_serial_comm.cpp files.cpp)
