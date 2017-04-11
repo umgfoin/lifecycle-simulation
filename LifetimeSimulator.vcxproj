@@ -75,21 +75,29 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>F:\SDK\BOOST;$(IncludePath)</IncludePath>
     <LibraryPath>F:\SDK\BOOST\stage\$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>F:\SDK\BOOST;$(IncludePath)</IncludePath>
     <LibraryPath>F:\SDK\BOOST\stage\$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>F:\SDK\BOOST;$(IncludePath)</IncludePath>
     <LibraryPath>F:\SDK\BOOST\stage\$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>F:\SDK\BOOST;$(IncludePath)</IncludePath>
     <LibraryPath>F:\SDK\BOOST\stage\$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,6 +105,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -108,6 +117,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,6 +133,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <OmitFramePointers>true</OmitFramePointers>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +152,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <OmitFramePointers>true</OmitFramePointers>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,26 +162,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="asio_serial_comm.h" />
-    <ClInclude Include="win_serial_comm.h" />
-    <ClInclude Include="files.h" />
-    <ClInclude Include="main.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
-    <ClInclude Include="gpd-x303s-control.h" />
+    <ClInclude Include="src\asio_serial_comm.h" />
+    <ClInclude Include="src\win_serial_comm.h" />
+    <ClInclude Include="src\files.h" />
+    <ClInclude Include="src\main.h" />
+    <ClInclude Include="src\stdafx.h" />
+    <ClInclude Include="src\src\targetver.h" />
+    <ClInclude Include="src\gpd-x303s-control.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="asio_serial_comm.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="win_serial_comm.cpp" />
-    <ClCompile Include="files.cpp" />
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="src\asio_serial_comm.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\win_serial_comm.cpp" />
+    <ClCompile Include="src\files.cpp" />
+    <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="gpd-x303s-control.cpp" />
+    <ClCompile Include="src\gpd-x303s-control.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
