@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#ifdef _WIN32
 #include "win_serial_comm.h"
 
 // This is a stripped-down win32-serialcomm-wrapper derived from our full-featured async CComm-class
@@ -93,3 +94,5 @@ bool win_serial_comm::is_open(void)
 {
 	return (hFile != INVALID_HANDLE_VALUE);
 }
+
+#endif
