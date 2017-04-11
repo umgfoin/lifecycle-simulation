@@ -14,7 +14,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/build)
 # needed for Boost 2.8BOOST_ROOT
 # set (Boost_NO_BOOST_CMAKE ON)
 
-set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
@@ -43,11 +43,14 @@ endif (Boost_FOUND)
 
 
 
-set(simulatorSrcs stdafx.cpp main.cpp gpd-x303s-control.cpp asio_serial_comm.cpp files.cpp)
+#set(simulatorSrcs stdafx.cpp main.cpp gpd-x303s-control.cpp asio_serial_comm.cpp files.cpp)
+
+# compile all cpp-files
+file(GLOB_RECURSE cpp_sources src/*.cpp)
 
 set(TARGET_NAME "simulator")
 
-add_executable(${TARGET_NAME} ${simulatorSrcs})
+add_executable(${TARGET_NAME} ${cpp_sources})
 
 # append additional compiler-flags
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
