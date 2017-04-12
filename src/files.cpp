@@ -84,7 +84,7 @@ string base_file::get_timestamp(time_t* timedata)
 	}
 
 	stringstream stream;
-	stream << std::put_time(std::localtime(t), "%F-%T %Z");
+	stream << std::put_time(std::localtime(t), "%F-%T %z");
 
 	return move(stream.str());
 }
@@ -201,7 +201,8 @@ bool state_file::write(void)
 
 	file << option_names[0] << psz_equal << sigma_t << endl;
 	file << option_names[1] << psz_equal << cycles  << endl;
-	file << option_names[2] << psz_equal << get_timestamp()  << endl;
+//	file << option_names[2] << psz_equal << get_timestamp(&last_power_assert) << endl;
+	file << option_names[3] << psz_equal << get_timestamp()  << endl;
 
 	return true;
 }
