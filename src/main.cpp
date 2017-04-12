@@ -159,7 +159,7 @@ int main()
 						t_off,
 						(float) states.sigma_t / 3600.f,
 						0.f,
-						0.f,
+						0,
 						0.f
 				);
 				wcout.flush();
