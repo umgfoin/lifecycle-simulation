@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include <cstdlib>  
 #include <limits> 
+#include <locale> 
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -16,6 +17,7 @@
 #include <boost/random/discrete_distribution.hpp>
 #include <boost/random/random_device.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 #include "main.h"
 
 using namespace std;
@@ -23,26 +25,37 @@ using namespace std::chrono;
 using namespace std::this_thread;
 using namespace boost;
 
-atomic<bool> stop_flag(false);
+namespace fs = boost::filesystem;
 
-state_file	          states(L"state.cfg");
-config_file           config(L"config.cfg");
-log_file	          logger(L"events.log");
+atomic<bool>	      stop_flag(false);
+state_file*           states = nullptr;
 gpdx303s	          vsource;
 random::random_device dev_random;
 
 
 
-int main()
+int main(int argc, char* argv[] )
 {
+	// set OS-defaults for character-conversion
+	setlocale(LC_CTYPE, "");
+
+	// constructs absolute path based on exe-dir
+	fs::path base_path (fs::system_complete(argv[0]).parent_path());
+
+	// using move-semantics
+	state_file	states (fs::complete(L"state.cfg",  base_path) );
+	config_file config (fs::complete(L"config.cfg", base_path) );
+	log_file	logger (fs::complete(L"events.log", base_path) );
+
 	// get persistant states and settings
 	if ( !states.read() ){
-		wcout << "Failed reading statefile (" << states.file_path << ")." << endl;
+		wcout << "Failed reading statefile (" << states.file_path.filename() << ")." << endl;
 		return 0;
 	}
+	::states = &states;
 
 	if ( !config.read() ){
-		wcout << "Failed reading config-file (" << config.file_path << ")." << endl;
+		wcout << "Failed reading config-file (" << config.file_path.filename() << ")." << endl;
 		return 0;
 	}
 
@@ -184,8 +197,8 @@ int main()
 void tidy_up(void)
 {
 
-	if ( !states.write() )
-		wcout << "Failed writing statefile (" << states.file_path << ")." << endl;
+	if ( states && (!states->write()) )
+		wcout << "Failed writing statefile (" << states->file_path.filename() << ")." << endl;
 	
 	vsource.close();
 }

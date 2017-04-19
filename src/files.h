@@ -11,7 +11,8 @@ using namespace std;
 class base_file
 {
 public:
-	base_file(const path file_path) : file_path (file_path){};
+	base_file(const path& file_path) : file_path (file_path){};
+	base_file(path&& file_path)		 : file_path (move(file_path)){};
 	base_file(void) = delete;
 
 	virtual bool read(void);
@@ -32,7 +33,8 @@ public:
 class state_file : public base_file
 {
 public:
-	state_file(const path& file_path) : base_file(file_path) {};
+	state_file(path&& file_path )		: base_file(std::move(file_path) ) {};
+	state_file(const path& file_path)	: base_file(file_path) {};
 
 	virtual bool write(void);
 	virtual void parse_line(istringstream&& stream);
@@ -47,7 +49,8 @@ private:
 class config_file : public base_file
 {
 public:
-	config_file(const path& file_path) : base_file(file_path) {};
+	config_file(path&& file_path)		: base_file(std::move(file_path)) {};
+	config_file(const path& file_path)  : base_file(file_path) {};
 
 	virtual bool write(void);
 	virtual void parse_line(istringstream&& stream);
@@ -66,6 +69,7 @@ class log_file : public base_file
 {
 public:
 	log_file(const path& file_path) : base_file(file_path) {};
+	log_file(path&& file_path)		: base_file(std::move(file_path) ) {};
 
 	virtual bool write(string& event);
 	virtual void parse_line(istringstream&& stream);
