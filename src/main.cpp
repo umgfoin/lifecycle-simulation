@@ -218,20 +218,24 @@ void sig_handler(int sig)
 		// CTRL-C
 	case SIGINT:
 	case SIGABRT:
-	stop_flag = true;
-	break;
-
 	case SIGTERM:
+		stop_flag = true;
+		break;
+
+#ifdef SIGBREAK
 	// console-close
 	case SIGBREAK:
-	// on windows, signal-handlers run in seperate thread
-	// leaving this function will remove the main-thread
-	// thus waiting here, let the main thread exit safely
-	stop_flag = true;
-	sleep_for(seconds(2));
-	//		promise<void>().get_future().wait();
-	break;
+		// on windows, signal-handlers run in seperate thread
+		// leaving this function will remove the main-thread
+		// thus waiting here, let the main thread exit safely
+		stop_flag = true;
+		// sleep forever
+		promise<void>().get_future().wait();
+		break;
+#endif
+
 	default:
-	break;
+		break;
 	}
+	signal(sig, sig_handler);
 }
