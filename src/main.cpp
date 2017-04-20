@@ -49,23 +49,25 @@ int main(int argc, char* argv[] )
 
 	// get persistant states and settings
 	if ( !states.read() ){
-		wcout << "Failed reading statefile (" << states.file_path.filename() << ")." << endl;
+		wcerr << "Failed reading statefile (" << states.file_path.filename() << ")." << endl;
 		return 0;
 	}
 	::states = &states;
 
 	if ( !config.read() ){
-		wcout << "Failed reading config-file (" << config.file_path.filename() << ")." << endl;
+		wcerr << "Failed reading config-file (" << config.file_path.filename() << ")." << endl;
 		return 0;
 	}
 
 	if ( !vsource.open_comm(config.str_serialport.c_str(), 115200 )){
-		wcout << "Failed to open serial-port (" << config.str_serialport.c_str() << ")." << endl;
+		wcerr << "Failed to open serial-port (" << config.str_serialport.c_str() << ")." << endl;
 		return 0;
 	}
 
 	signal(SIGINT,   sig_handler);
+#ifdef SIGBREAK
 	signal(SIGBREAK, sig_handler);
+#endif
 	signal(SIGTERM,  sig_handler);
 	signal(SIGABRT,  sig_handler);
 	
@@ -198,7 +200,7 @@ void tidy_up(void)
 {
 
 	if ( states && (!states->write()) )
-		wcout << "Failed writing statefile (" << states->file_path.filename() << ")." << endl;
+		wcerr << "Failed writing statefile (" << states->file_path.filename() << ")." << endl;
 	
 	vsource.close();
 }
@@ -213,23 +215,23 @@ unsigned get_random(unsigned low, unsigned high)
 void sig_handler(int sig)
 {
 	switch ( sig ){
-	// CTRL-C
+		// CTRL-C
 	case SIGINT:
 	case SIGABRT:
-		stop_flag = true;
-			break;
+	stop_flag = true;
+	break;
 
 	case SIGTERM:
 	// console-close
 	case SIGBREAK:
-		// on windows, signal-handlers run in seperate thread
-		// leaving this function will remove the main-thread
-		// thus waiting here, let the main thread exit safely
-		stop_flag = true;
-		sleep_for(seconds(2));
-//		promise<void>().get_future().wait();
-		break;
+	// on windows, signal-handlers run in seperate thread
+	// leaving this function will remove the main-thread
+	// thus waiting here, let the main thread exit safely
+	stop_flag = true;
+	sleep_for(seconds(2));
+	//		promise<void>().get_future().wait();
+	break;
 	default:
-		break;
+	break;
 	}
 }
