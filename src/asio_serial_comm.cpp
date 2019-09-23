@@ -56,7 +56,7 @@ void asio_serial_comm::set_comm_timeouts(void)
 {
 #ifdef _WIN32
 	COMMTIMEOUTS to;
-	HANDLE h = p_serial->native();
+	HANDLE h = p_serial->native_handle();
 	::GetCommTimeouts(h, &to);
 	to.ReadIntervalTimeout = MAXDWORD;
 	to.ReadTotalTimeoutMultiplier = 0;
@@ -64,7 +64,7 @@ void asio_serial_comm::set_comm_timeouts(void)
 	::SetCommTimeouts(h, &to);
 #else
 	termios tio;
-	int fd = p_serial->native();
+	int fd = p_serial->native_handle();
 	::tcgetattr(fd, &tio); /* get current port settings */
 	tio.c_cc[VTIME] = 0;   /* inter-character timer unused */
 	tio.c_cc[VMIN] = 0;    /* blocking read until 5 chars received */
@@ -120,11 +120,11 @@ void asio_serial_comm::clear_io_buffers(unsigned method)
 	int purge_flags[] = {PURGE_RXCLEAR | PURGE_RXABORT,
 						 PURGE_TXCLEAR | PURGE_TXABORT, 
 						 PURGE_RXCLEAR | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_TXABORT };
-	::PurgeComm(p_serial->native(), purge_flags[method]);
+	::PurgeComm(p_serial->native_handle(), purge_flags[method]);
 
 #else
 	// POSIX
 	int purge_flags[] = { TCIFLUSH, TCOFLUSH, TCIOFLUSH };
-	::tcflush(p_serial->native(), purge_flags[method]);
+	::tcflush(p_serial->native_handle(), purge_flags[method]);
 #endif
 }
